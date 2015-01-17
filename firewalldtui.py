@@ -82,6 +82,82 @@ def listnonpermservices():
 
     serviceactions()
 
+def addpermservices():
+    avaiserv2disable = []
+    selectionmenu = []
+    cmd="firewall-cmd --get-services"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    avaiserv, error = p.communicate()
+    cmd="firewall-cmd --list-services --permanent --zone=%s" % selectedzone
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    actserv, error = p.communicate()
+    list1 = avaiserv.rstrip().split()
+    list2 = actserv.rstrip().split()
+    for item in list1:
+        if item not in list2:
+            avaiserv2disable.append(item)
+
+    for serv in avaiserv2disable:
+        tags = False
+        item = serv, "" ,False
+        selectionmenu.append(item)
+    code, tags = d.checklist("Select Services to enable Permanently" ,
+                                 choices=selectionmenu,
+                                 title="Services Selection",
+                                 backtitle="Firewall Administration Menu "
+                                 "Tui Version")
+    if code == d.OK:
+        if not tags:
+            d.msgbox("You didn't select a service to enable")
+            addpermservices()
+        else:
+            for item in tags:
+                cmd="firewall-cmd --add-service=%s --permanent --zone=%s" % (item, selectedzone)
+                p = Popen(cmd, stdout=PIPE, shell=True)
+                standard = p.communicate()
+            d.msgbox("Services permanently added to zone.")
+            serviceactionsmenu()
+    else:
+        serviceactionsmenu()
+
+def addnonpermservices():
+    avaiserv2disable = []
+    selectionmenu = []
+    cmd="firewall-cmd --get-services"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    avaiserv, error = p.communicate()
+    cmd="firewall-cmd --list-services --zone=%s" % selectedzone
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    actserv, error = p.communicate()
+    list1 = avaiserv.rstrip().split()
+    list2 = actserv.rstrip().split()
+    for item in list1:
+        if item not in list2:
+            avaiserv2disable.append(item)
+
+    for serv in avaiserv2disable:
+        tags = False
+        item = serv, "" ,False
+        selectionmenu.append(item)
+    code, tags = d.checklist("Select Services to enable non-permanently" ,
+                                 choices=selectionmenu,
+                                 title="Services Selection",
+                                 backtitle="Firewall Administration Menu "
+                                 "Tui Version")
+    if code == d.OK:
+        if not tags:
+            d.msgbox("You didn't select a service to enable")
+            addpermservices()
+        else:
+            for item in tags:
+                cmd="firewall-cmd --add-service=%s --zone=%s" % (item, selectedzone)
+                p = Popen(cmd, stdout=PIPE, shell=True)
+                standard = p.communicate()
+            d.msgbox("Services non-permanently added to zone.")
+            serviceactionsmenu()
+    else:
+        serviceactionsmenu()
+
 def removepermservices():
     listpermservices = []
     cmd="firewall-cmd --list-services --permanent --zone=%s" % selectedzone
@@ -164,9 +240,9 @@ def serviceactionsmenu():
             elif tags == "(2)":
                 listnonpermservices()
             elif tags == "(3)":
-                pass
+                addpermservices()
             elif tags == "(4)":
-                pass
+                addnonpermservices()
             elif tags == "(5)":
                 removepermservices()
             elif tags == "(6)":
