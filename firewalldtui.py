@@ -1,7 +1,11 @@
 #!/usr/bin/env python2
-import locale, re
+import locale, re, os
 from dialog import Dialog
 from subprocess import Popen, PIPE
+
+if not os.geteuid == 0 and not os.getenv("SUDO_UID"):
+    exit("You need root privilegs to run utility. \nPlease try again.")
+
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -343,7 +347,7 @@ def addpermports():
         if tags:
             for item in tags.split(","):
                 if not re.search(r"^\d+(\/)(tcp|udp)", item):
-                    d.msgbox("You introduce a value not permited")
+                    d.msgbox("You introduce a value not permitted")
                     addpermports()
                 else:
                     for item in tags.split(","):
@@ -366,11 +370,11 @@ def addnonpermports():
         if tags:
             for item in tags.split(","):
                 if not re.search(r"^\d+(\/)(tcp|udp)", item):
-                    d.msgbox("You introduce a value not permited")
+                    d.msgbox("You introduce a value not permitted")
                     addnonpermports()
                 else:
                     for item in tags.split(","):
-                        #it doesn't matter if is already enabled
+                        #it doesn't matter if it's already enabled
                         cmd="firewall-cmd --add-port=%s --zone=%s" % (item, selectedzone)
                         p = Popen(cmd, stdout=PIPE, shell=True)
                         addports, error = p.communicate()
@@ -384,10 +388,68 @@ def addnonpermports():
         portsactions()
 
 def removepermports():
-    pass
+    listports = []
+    cmd="firewall-cmd --list-ports --permanent --zone=%s" % selectedzone
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    ports, error = p.communicate()
+    if not ports:
+        d.msgbox("No active ports in zone: %s" % selectedzone)
+        portsactionsmenu()
+    else:
+        for port in ports.split():
+            tags = False
+            item = port, "" ,False
+            listports.append(item)
+        code, tags = d.checklist("Select Ports to disable Permanent" ,
+                                 choices=listports,
+                                 title="Ports Selection",
+                                 backtitle="Firewall Administration Menu "
+                                 "Tui Version")
+        if code == d.OK:
+            if not tags:
+                d.msgbox("You didn't select a port to disable")
+                removepermports()
+            else:
+                for item in tags:
+                    cmd="firewall-cmd --remove-port=%s --permanent --zone=%s" % (item, selectedzone)
+                    p = Popen(cmd, stdout=PIPE, shell=True)
+                    standard = p.communicate()
+                d.msgbox("Ports permanently disable in zone.")
+                portsactionsmenu()
+        else:
+            portsactionsmenu()
 
 def removenonpermports():
-    pass
+    listports = []
+    cmd="firewall-cmd --list-ports --zone=%s" % selectedzone
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    ports, error = p.communicate()
+    if not ports:
+        d.msgbox("No active ports in zone: %s" % selectedzone)
+        portsactionsmenu()
+    else:
+        for port in ports.split():
+            tags = False
+            item = port, "" ,False
+            listports.append(item)
+        code, tags = d.checklist("Select Ports to disable non-permanently" ,
+                                 choices=listports,
+                                 title="Ports Selection",
+                                 backtitle="Firewall Administration Menu "
+                                 "Tui Version")
+        if code == d.OK:
+            if not tags:
+                d.msgbox("You didn't select a port to disable")
+                removenonpermports()
+            else:
+                for item in tags:
+                    cmd="firewall-cmd --remove-port=%s --zone=%s" % (item, selectedzone)
+                    p = Popen(cmd, stdout=PIPE, shell=True)
+                    standard = p.communicate()
+                d.msgbox("Ports non-permanently disable in zone.")
+                portsactionsmenu()
+        else:
+            portsactionsmenu()
 
 def portsactionsmenu():
         global selectedzone
@@ -450,8 +512,8 @@ def main():
             pass
         else:
             code, tag = d.menu("OK, then you have two options:",
-                           choices=[("(1)", "Leave this fascinating example"),
-                                    ("(2)", "Leave this fascinating example")])
+                           choices=[("(1)", "Leave example"),
+                                    ("(2)", "Leave example")])
 
 if __name__  == "__main__":
     main()
