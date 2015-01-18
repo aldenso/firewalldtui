@@ -13,19 +13,17 @@ d = Dialog(dialog="dialog")
 
 d.set_background_title("Firewall Administration Menu")
 listzones = []
-services = []
 selectedzone = ""
 
 def listofzones():
-	cmd="firewall-cmd --get-zones"
-	p = Popen(cmd, stdout=PIPE, shell=True)
-	zones, error = p.communicate()
-	for zone in zones.split():
-		tag = False
-		lista = zone, "" ,tag
-		listzones.append(lista)
-	return listzones
-
+    cmd="firewall-cmd --get-zones"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    zones, error = p.communicate()
+    for zone in zones.split():
+	   tag = False
+	   lista = zone, "" ,tag
+	   listzones.append(lista)
+    return listzones
 
 def getstatus():
     cmd="firewall-cmd --state"
@@ -36,29 +34,77 @@ def getstatus():
     version, error = p.communicate()
     if state.rstrip() == "running":
         d.msgbox("Firewalld Service is Running, Firewalld version: %s" % version.rstrip())
+        main()
     else:
         d.msgbox("Firewalld Service is NOT Running")
+        main()
+
+def listallzones():
+    listofzones()
+    showlist = []
+    for item in listzones:
+        showlist.append(item[0])
+    code = d.msgbox("Available Zones: \n %s " % showlist)
+    if code == d.OK:
+        zoneactions()
+
+def getdefzone():
+    cmd="firewall-cmd --get-default-zone"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    default, error = p.communicate()
+    code = d.msgbox("The default zone is: \n %s" % default)
+    if code == d.OK:
+        zoneactions()
+
+def setdefzone():
+    selectedzone = ""
+    listofzones()
+    code, tags = d.radiolist("Select the zone you want to set as Default." ,
+                            choices=listzones,
+                            title="Zone Selection",
+                            backtitle="Firewall Administration Menu "
+                            "Tui Version")
+    if code == d.OK:
+        if tags:
+            selectedzone = str(tags)
+            cmd="firewall-cmd --set-default-zone=%s" % selectedzone
+            p = Popen(cmd, stdout=PIPE, shell=True)
+            default, error = p.communicate()
+            code = d.msgbox("The default zone is: \n %s" % selectedzone)
+            if code == d.OK:
+                zoneactions()
+        else:
+            d.msgbox("You must select a zone.")
+            setdefzone()
+    else:
+        del listzones[:]
+        zoneactions()
 
 def zoneactions():
     code, tags = d.menu("Select Actions to perform",
             choices= [("(1)", "List All Zones"),
-            ("(2)", "Set Default Zone"),
-            ("(3)", "Get Active Zones"),
-            ("(4)", "Add Interface to Zone"),
-            ("(5)", "Change Interface to Zone"),
-            ("(6)", "Remove Interface from Zone")],
+            ("(2)", "Get Default Zone"),
+            ("(3)", "Set Default Zone"),
+            ("(4)", "Get Active Zones"),
+            ("(5)", "Add Interface to Zone"),
+            ("(6)", "Change Interface to Zone"),
+            ("(7)", "Remove Interface from Zone")],
             title="Zone Selection",
             backtitle="Firewall Administration Menu Tui Version")
     if code == d.OK:
         if tags == "(1)":
-            pass
+            listallzones()
         elif tags == "(2)":
-            pass
+            getdefzone()
         elif tags == "(3)":
-            pass
+            setdefzone()
         elif tags == "(4)":
             pass
-        elif tags == "(5)":
+        elif tags == "(6)":
+            pass
+        elif tags == "(7)":
+            pass
+        elif tags == "(8)":
             pass
     else:
         main()
@@ -259,7 +305,6 @@ def serviceactionsmenu():
             elif tags == "(6)":
                 removenonpermservices()
         else:
-            services = []
             selectedzone = ""
             main()
 
