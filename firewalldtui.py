@@ -524,6 +524,70 @@ def portsactionsmenu():
             selectedzone = ""
             main()
 
+def querypermmasq():
+    global selectedzone
+    if not selectedzone:
+        listofzones()
+        code, tags = d.radiolist("Select the zone where you want to work" ,
+                                 choices=listzones,
+                                 title="Zone Selection",
+                                 backtitle="Firewall Administration Menu "
+                                 "Tui Version")
+        if code == d.OK:
+            if tags:
+                selectedzone = str(tags)
+                cmd="firewall-cmd --query-masquerade --permanent --zone=%s" % selectedzone
+                p = Popen(cmd, stdout=PIPE, shell=True)
+                query, error = p.communicate()
+                if query.rstrip() == "yes":
+                    code = d.msgbox("For Zone %s the masquerade is set to %s " % (selectedzone, query.rstrip()))
+                    if code == d.OK:
+                        selectedzone = ""
+                        masqueradeactionsmenu()
+                else:
+                    code = d.msgbox("For zone %s the masquerade is set to no" % selectedzone)
+                    if code == d.OK:
+                        selectedzone = ""
+                        masqueradeactionsmenu()
+            else:
+                d.msgbox("You have to select a zone...")
+                querypermmasq()
+        else:
+            #main()
+            selectedzone = ""
+            masqueradeactionsmenu()
+    else:
+        selectedzone = ""
+        masqueradeactionsmenu()   
+
+def masqueradeactionsmenu():
+    global selectedzone
+    code, tags = d.menu("Select Action to perform:",
+            choices= [("(1)", "Add Permanent Masquerade"),
+            ("(2)", "Add non-permanent Masquerade"),
+            ("(3)", "Query Permanent Masquerade"),
+            ("(4)", "Query non-permanent Masquerade"),
+            ("(5)", "Remove Permanent Masquerade"),
+            ("(6)", "Remove non-permanent Masquerade")],
+            title="Masquerade Actions",
+            backtitle="Firewall Administration Menu Tui Version")
+    if code == d.OK:
+        if tags == "(1)":
+            pass
+        elif tags == "(2)":
+            pass
+        elif tags == "(3)":
+            querypermmasq()
+        elif tags == "(4)":
+            pass
+        elif tags == "(5)":
+            pass
+        elif tags == "(6)":
+            pass
+    else:
+        selectedzone = ""
+        main()
+
 def main():
 
     code, tags = d.menu("Select an Action to perform ",
@@ -550,7 +614,7 @@ def main():
         elif tags == "(5)":
             pass
         elif tags == "(6)":
-            pass
+            masqueradeactionsmenu()
         elif tags == "(7)":
             pass
         elif tags == "(8)":
