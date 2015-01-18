@@ -40,6 +40,7 @@ def getstatus():
         main()
 
 def listallzones():
+    del listzones[:]
     listofzones()
     showlist = []
     for item in listzones:
@@ -58,6 +59,7 @@ def getdefzone():
 
 def setdefzone():
     selectedzone = ""
+    del listzones[:]
     listofzones()
     code, tags = d.radiolist("Select the zone you want to set as Default." ,
                             choices=listzones,
@@ -310,6 +312,7 @@ def serviceactionsmenu():
 
 def serviceactions():
     global selectedzone
+    del listzones[:]
     if not selectedzone:
         listofzones()
         code, tags = d.radiolist("Select the zone where you want to work" ,
@@ -335,6 +338,7 @@ def serviceactions():
 
 def portsactions():
     global selectedzone
+    del listzones[:]
     if not selectedzone:
         listofzones()
         code, tags = d.radiolist("Select the zone where you want to work" ,
@@ -524,41 +528,29 @@ def portsactionsmenu():
             selectedzone = ""
             main()
 
+def addpermmasq():
+    pass
+
 def querypermmasq():
-    global selectedzone
-    if not selectedzone:
-        listofzones()
-        code, tags = d.radiolist("Select the zone where you want to work" ,
-                                 choices=listzones,
-                                 title="Zone Selection",
-                                 backtitle="Firewall Administration Menu "
-                                 "Tui Version")
-        if code == d.OK:
-            if tags:
-                selectedzone = str(tags)
-                cmd="firewall-cmd --query-masquerade --permanent --zone=%s" % selectedzone
-                p = Popen(cmd, stdout=PIPE, shell=True)
-                query, error = p.communicate()
-                if query.rstrip() == "yes":
-                    code = d.msgbox("For Zone %s the masquerade is set to %s " % (selectedzone, query.rstrip()))
-                    if code == d.OK:
-                        selectedzone = ""
-                        masqueradeactionsmenu()
-                else:
-                    code = d.msgbox("For zone %s the masquerade is set to no" % selectedzone)
-                    if code == d.OK:
-                        selectedzone = ""
-                        masqueradeactionsmenu()
-            else:
-                d.msgbox("You have to select a zone...")
-                querypermmasq()
-        else:
-            #main()
-            selectedzone = ""
-            masqueradeactionsmenu()
-    else:
-        selectedzone = ""
-        masqueradeactionsmenu()   
+    cmd="firewall-cmd --list-all-zones --permanent | egrep '^\S|masquerade'"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    masqlist = re.findall(r'(\w+)\n\s+masquerade:\s+(\w+)\n', output)
+    code = d.msgbox("Status of masquerade for all zones. \n %s" 
+                    % masqlist, height=15, width=50 )
+    if code == d.OK:
+        masqueradeactionsmenu()
+
+def querynonpermmasq():
+    cmd="firewall-cmd --list-all-zones | egrep '^\S|masquerade'"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    masqlist = re.findall(r'(\w+)\n\s+masquerade:\s+(\w+)\n', output)
+    code = d.msgbox("Status of masquerade for all zones. \n %s" 
+                    % masqlist, height=15, width=50 )
+    if code == d.OK:
+        masqueradeactionsmenu()
+  
 
 def masqueradeactionsmenu():
     global selectedzone
@@ -579,7 +571,7 @@ def masqueradeactionsmenu():
         elif tags == "(3)":
             querypermmasq()
         elif tags == "(4)":
-            pass
+            querynonpermmasq()
         elif tags == "(5)":
             pass
         elif tags == "(6)":
