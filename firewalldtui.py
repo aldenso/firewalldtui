@@ -680,8 +680,53 @@ def masqueradeactionsmenu():
         selectedzone = ""
         main()
 
-def main():
+def reloadaction():
+    cmd="firewall-cmd --reload"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    code, tags = d.msgbox("Reload executed with status: \n %s" % output)
+    reloadmenu()
 
+def completereloadaction():
+    code = d.yesno("Are you sure? this will kill all stablished sessions.")
+    if code == d.OK:
+        cmd="firewall-cmd --reload"
+        p = Popen(cmd, stdout=PIPE, shell=True)
+        output, error = p.communicate()
+        code, tags = d.msgbox("Complete Reload executed with status: \n %s" % output)
+        reloadmenu()
+    else:
+        reloadmenu()
+
+def runtoperm():
+    code = d.yesno("Are you sure? this will rewrite all your permanent settings.")
+    if code == d.OK:
+        cmd="firewall-cmd --runtime-to-permanent"
+        p = Popen(cmd, stdout=PIPE, shell=True)
+        output, error = p.communicate()
+        code, tags = d.msgbox("Complete Reload executed with status: \n %s" % output)
+        reloadmenu()
+    else:
+        reloadmenu()
+
+def reloadmenu():
+    code, tags = d.menu("Select an Action to perform ",
+            choices= [("(1)", "Firewall Reload"),
+            ("(2)", "Firewall Complete Reload"),
+            ("(3)", "Runtime to Permanent"),],
+            title="Reload and Runtime Selection",
+            backtitle="Firewalld Administration Menu Tui Version")
+    if code == d.OK:
+        if tags == "(1)":
+            reloadaction()
+        elif tags == "(2)":
+            completereloadaction()
+        elif tags == "(3)":
+            runtoperm()
+    else:
+        main()
+
+def main():
     code, tags = d.menu("Select an Action to perform ",
             choices= [("(1)", "Check Services Status"),
             ("(2)", "Zones Actions"),
@@ -691,7 +736,7 @@ def main():
             ("(6)", "Masquerade Actions"),
             ("(7)", "Forward Actions"),
             ("(8)", "Reload/CompleteReload/Run2Permanent") ],
-            title="Actions Selection",
+            title="Top Menu - Actions Selection",
             backtitle="Firewalld Administration Menu Tui Version")
 
     if code == d.OK:
@@ -710,11 +755,18 @@ def main():
         elif tags == "(7)":
             pass
         elif tags == "(8)":
-            pass
+            reloadmenu()
+    else:
+        code, tags = d.menu("Please select an Action:",
+            choices=[("(1)", "Exit utility"),
+            ("(2)", "Back to Top Menu")])
+        if code == d.OK:
+            if tags == "(1)":
+                exit("Thansk for using this tool.")
+            elif tags == "(2)":
+                main()
         else:
-            code, tag = d.menu("OK, then you have two options:",
-                           choices=[("(1)", "Leave example"),
-                                    ("(2)", "Leave example")])
+            exit("Thansk for using this tool.")
 
 if __name__  == "__main__":
     main()

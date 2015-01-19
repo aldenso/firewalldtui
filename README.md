@@ -9,4 +9,4 @@ yum install python-pip;
 pip install python2-pythondialog
 
 Features enabled so far:
-Get status/version, services actions, ports and some masquerade actions. 
+Get status/version, services actions, ports, masquerade, reloads, runtime to permanent and few zones actions. 
