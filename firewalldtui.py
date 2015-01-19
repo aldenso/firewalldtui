@@ -600,6 +600,57 @@ def querynonpermmasq():
     if code == d.OK:
         masqueradeactionsmenu()
   
+def removepermmasq():
+    cmd="firewall-cmd --list-all-zones --permanent | egrep '^\S|masquerade'"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    masqlist = re.findall(r'(\w+)\n\s+masquerade:\s+(\w+)\n', output)
+    # check non masq zones and create list with manu tags "[(opt1, "", False), ...]"
+    selectmasq4zone = [ (i[0], "", False) for i in masqlist if "yes" in i[1]]
+    code, tags = d.checklist("Select Zones to remove masquerade on" ,
+                            choices=selectmasq4zone,
+                            title="Zone Selection",
+                            backtitle="Firewall Administration Menu "
+                            "Tui Version")
+    if code == d.OK:
+        if tags:
+            for item in tags:
+                cmd="firewall-cmd --remove-masquerade --permanent --zone=%s" % item
+                p = Popen(cmd, stdout=PIPE, shell=True)
+                output, error = p.communicate()
+            d.msgbox("Masquerade remove on zones: \n %s" % str(tags))
+            masqueradeactionsmenu()
+        else:
+            d.msgbox("You didn't select a zone to set masquerade.")
+            removepermmasq() 
+    else:
+        masqueradeactionsmenu()
+
+def removenonpermmasq():
+    cmd="firewall-cmd --list-all-zones | egrep '^\S|masquerade'"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    masqlist = re.findall(r'(\w+)\n\s+masquerade:\s+(\w+)\n', output)
+    # check non masq zones and create list with manu tags "[(opt1, "", False), ...]"
+    selectmasq4zone = [ (i[0], "", False) for i in masqlist if "yes" in i[1]]
+    code, tags = d.checklist("Select Zones to remove masquerade on" ,
+                            choices=selectmasq4zone,
+                            title="Zone Selection",
+                            backtitle="Firewall Administration Menu "
+                            "Tui Version")
+    if code == d.OK:
+        if tags:
+            for item in tags:
+                cmd="firewall-cmd --remove-masquerade --zone=%s" % item
+                p = Popen(cmd, stdout=PIPE, shell=True)
+                output, error = p.communicate()
+            d.msgbox("Masquerade remove on zones: \n %s" % str(tags))
+            masqueradeactionsmenu()
+        else:
+            d.msgbox("You didn't select a zone to set masquerade.")
+            removenonpermmasq() 
+    else:
+        masqueradeactionsmenu()
 
 def masqueradeactionsmenu():
     global selectedzone
@@ -616,15 +667,15 @@ def masqueradeactionsmenu():
         if tags == "(1)":
             addpermmasq()
         elif tags == "(2)":
-            pass
+            addnonpermmasq()
         elif tags == "(3)":
             querypermmasq()
         elif tags == "(4)":
             querynonpermmasq()
         elif tags == "(5)":
-            pass
+            removepermmasq()
         elif tags == "(6)":
-            pass
+            removenonpermmasq()
     else:
         selectedzone = ""
         main()
