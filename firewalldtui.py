@@ -82,6 +82,59 @@ def setdefzone():
         del listzones[:]
         zoneactions()
 
+def getactivezones():
+    cmd="firewall-cmd --get-active-zones"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    code = d.msgbox("The Active zones are: \n %s" % output)
+    if code == d.OK:
+        zoneactions()
+
+def addinttozone():
+    cmd="ip l | grep '^[1-9]:' | awk {'print $2'}  | grep -v 'lo' | cut -d':' -f1"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    interfaces = output.split()
+    cmd="firewall-cmd --get-active-zones"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    availableinterfaces = [i for i in interfaces if i not in output.split()]
+    listofinterfaces = [(i, "", False) for i in availableinterfaces]
+    if availableinterfaces:
+        code, tagsint = d.checklist("Select interfaces to add to the zone" ,
+                            choices=listofinterfaces,
+                            title="Interface Selection",
+                            backtitle="Firewall Administration Menu "
+                            "Tui Version")
+        if code == d.OK:
+            if tagsint:
+                for tagint in tagsint:
+                    del listzones[:]
+                    listofzones()
+                    code, tagzone = d.radiolist("Select a zone where to add the interfaces." ,
+                            choices=listzones,
+                            title="Interface Selection")
+                    if code == d.OK:
+                        if tagzone:
+                            cmd="firewall-cmd --add-interface=%s --zone=%s" % (tagint, tagzone)
+                            p = Popen(cmd, stdout=PIPE, shell=True)
+                            output, error = p.communicate()
+                            code = d.msgbox("You succesfully added the interface to zone.")
+                            zoneactions()
+                        else:
+                            code = d.msgbox("You have to select a zone.")
+                            zoneactions()
+                    else:
+                        zoneactions()
+            else:
+                code = d.msgbox("You have to select an interface.")
+                addinttozone()
+        else: zoneactions()
+    else:
+        code = d.msgbox("No available interfaces. \nThe Active zones are: \n %s" % output)
+        zoneactions()
+
+
 def zoneactions():
     code, tags = d.menu("Select Actions to perform",
             choices= [("(1)", "List All Zones"),
@@ -101,12 +154,12 @@ def zoneactions():
         elif tags == "(3)":
             setdefzone()
         elif tags == "(4)":
-            pass
+            getactivezones()
+        elif tags == "(5)":
+            addinttozone()
         elif tags == "(6)":
             pass
         elif tags == "(7)":
-            pass
-        elif tags == "(8)":
             pass
     else:
         main()
