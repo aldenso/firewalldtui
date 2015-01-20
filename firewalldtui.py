@@ -45,7 +45,7 @@ def listallzones():
     showlist = []
     for item in listzones:
         showlist.append(item[0])
-    code = d.msgbox("Available Zones: \n %s " % showlist)
+    code = d.msgbox("Available Zones:\n%s " % showlist)
     if code == d.OK:
         zoneactions()
 
@@ -53,7 +53,7 @@ def getdefzone():
     cmd="firewall-cmd --get-default-zone"
     p = Popen(cmd, stdout=PIPE, shell=True)
     default, error = p.communicate()
-    code = d.msgbox("The default zone is: \n %s" % default)
+    code = d.msgbox("The default zone is:\n%s" % default)
     if code == d.OK:
         zoneactions()
 
@@ -72,7 +72,7 @@ def setdefzone():
             cmd="firewall-cmd --set-default-zone=%s" % selectedzone
             p = Popen(cmd, stdout=PIPE, shell=True)
             default, error = p.communicate()
-            code = d.msgbox("The default zone is: \n %s" % selectedzone)
+            code = d.msgbox("The default zone is:\n%s" % selectedzone)
             if code == d.OK:
                 zoneactions()
         else:
@@ -86,7 +86,7 @@ def getactivezones():
     cmd="firewall-cmd --get-active-zones"
     p = Popen(cmd, stdout=PIPE, shell=True)
     output, error = p.communicate()
-    code = d.msgbox("The Active zones are: \n %s" % output)
+    code = d.msgbox("The Active zones are:\n%s" % output, height=15, width=50 )
     if code == d.OK:
         zoneactions()
 
@@ -131,9 +131,75 @@ def addinttozone():
                 addinttozone()
         else: zoneactions()
     else:
-        code = d.msgbox("No available interfaces. \nThe Active zones are: \n %s" % output)
+        code = d.msgbox("No available interfaces.\nThe Active zones are:\n%s" % output)
         zoneactions()
 
+def changeinttozone():
+    cmd = "firewall-cmd --get-active-zones | grep interfaces | cut -d':' -f2"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    interfacesmenu = [(i, "", False) for i in output.split()]
+    interfaces = [ i for i in output.split()]
+    code, tagsint = d.radiolist("Select interface to change" ,
+                                 choices=interfacesmenu,
+                                 title="Interfaces Selection",
+                                 backtitle="Firewall Administration Menu "
+                                 "Tui Version")
+    if code == d.OK:
+        if tagsint:
+            cmd = "firewall-cmd --get-active-zones"
+            p = Popen(cmd, stdout=PIPE, shell=True)
+            output, error = p.communicate()
+            m = re.findall(r'(\w+)\s+(interfaces:.*?)\n', output)
+            actualzone = [i[0] for i in m if tagsint in i[1].split() ]
+            cmd = "firewall-cmd --get-zones"
+            p = Popen(cmd, stdout=PIPE, shell=True)
+            output, error = p.communicate()
+            listofzones = output.split()
+            listofzones.remove(actualzone[0])
+            availablezonesmenu = [ (i, "", False) for i in listofzones ]
+            code, tagszone = d.radiolist("Select zone to set the interface" ,
+                                 choices=availablezonesmenu,
+                                 title="Zone Selection",
+                                 backtitle="Firewall Administration Menu "
+                                 "Tui Version")
+            if code == d.OK:
+                    cmd = "firewall-cmd --change-interface=%s --zone=%s" % (tagsint, tagszone)
+                    p = Popen(cmd, stdout=PIPE, shell=True)
+                    output, error = p.communicate()
+                    d.msgbox("succesfully change interface %s to zone %s" % (tagsint, tagszone))
+                    zoneactions()
+            else:
+                zoneactions()
+        else:
+            d.msgbox("You didn't select an Interface")
+            zoneactions()
+    else:
+        zoneactions()
+
+def removeintfromzone():
+    cmd = "firewall-cmd --get-active-zones | grep interfaces | cut -d':' -f2"
+    p = Popen(cmd, stdout=PIPE, shell=True)
+    output, error = p.communicate()
+    interfaces = [(i, "", False) for i in output.split()]
+    code, tags = d.checklist("Select interfaces to remove from zones" ,
+                                 choices=interfaces,
+                                 title="Interfaces Selection",
+                                 backtitle="Firewall Administration Menu "
+                                 "Tui Version")
+    if code == d.OK:
+        if tags:
+            for tag in tags:
+                cmd = "firewall-cmd --remove-interface=%s" % tag
+                p = Popen(cmd, stdout=PIPE, shell=True)
+                output, error = p.communicate()
+            d.msgbox("succesfully remove interfaces from zones")
+            zoneactions()
+        else:
+            d.msgbox("You didn't select an Interface")
+            zoneactions()
+    else:
+        zoneactions()
 
 def zoneactions():
     code, tags = d.menu("Select Actions to perform",
@@ -158,9 +224,9 @@ def zoneactions():
         elif tags == "(5)":
             addinttozone()
         elif tags == "(6)":
-            pass
+            changeinttozone()
         elif tags == "(7)":
-            pass
+            removeintfromzone()
     else:
         main()
 
@@ -599,7 +665,7 @@ def addpermmasq():
                 cmd="firewall-cmd --add-masquerade --permanent --zone=%s" % item
                 p = Popen(cmd, stdout=PIPE, shell=True)
                 output, error = p.communicate()
-            d.msgbox("Masquerade added on zones: \n %s" % str(tags))
+            d.msgbox("Masquerade added on zones:\n%s" % str(tags))
             masqueradeactionsmenu()
         else:
             d.msgbox("You didn't select a zone to set masquerade.")
@@ -625,7 +691,7 @@ def addnonpermmasq():
                 cmd="firewall-cmd --add-masquerade --zone=%s" % item
                 p = Popen(cmd, stdout=PIPE, shell=True)
                 output, error = p.communicate()
-            d.msgbox("Masquerade added on zones: \n %s" % str(tags))
+            d.msgbox("Masquerade added on zones:\n%s" % str(tags))
             masqueradeactionsmenu()
         else:
             d.msgbox("You didn't select a zone to set masquerade.")
@@ -638,7 +704,7 @@ def querypermmasq():
     p = Popen(cmd, stdout=PIPE, shell=True)
     output, error = p.communicate()
     masqlist = re.findall(r'(\w+)\n\s+masquerade:\s+(\w+)\n', output)
-    code = d.msgbox("Status of masquerade for all zones. \n %s" 
+    code = d.msgbox("Status of masquerade for all zones.\n%s" 
                     % masqlist, height=15, width=50 )
     if code == d.OK:
         masqueradeactionsmenu()
@@ -648,7 +714,7 @@ def querynonpermmasq():
     p = Popen(cmd, stdout=PIPE, shell=True)
     output, error = p.communicate()
     masqlist = re.findall(r'(\w+)\n\s+masquerade:\s+(\w+)\n', output)
-    code = d.msgbox("Status of masquerade for all zones. \n %s" 
+    code = d.msgbox("Status of masquerade for all zones.\n%s" 
                     % masqlist, height=15, width=50 )
     if code == d.OK:
         masqueradeactionsmenu()
@@ -671,7 +737,7 @@ def removepermmasq():
                 cmd="firewall-cmd --remove-masquerade --permanent --zone=%s" % item
                 p = Popen(cmd, stdout=PIPE, shell=True)
                 output, error = p.communicate()
-            d.msgbox("Masquerade remove on zones: \n %s" % str(tags))
+            d.msgbox("Masquerade remove on zones:\n%s" % str(tags))
             masqueradeactionsmenu()
         else:
             d.msgbox("You didn't select a zone to set masquerade.")
@@ -697,7 +763,7 @@ def removenonpermmasq():
                 cmd="firewall-cmd --remove-masquerade --zone=%s" % item
                 p = Popen(cmd, stdout=PIPE, shell=True)
                 output, error = p.communicate()
-            d.msgbox("Masquerade remove on zones: \n %s" % str(tags))
+            d.msgbox("Masquerade remove on zones:\n%s" % str(tags))
             masqueradeactionsmenu()
         else:
             d.msgbox("You didn't select a zone to set masquerade.")
@@ -737,7 +803,7 @@ def reloadaction():
     cmd="firewall-cmd --reload"
     p = Popen(cmd, stdout=PIPE, shell=True)
     output, error = p.communicate()
-    code, tags = d.msgbox("Reload executed with status: \n %s" % output)
+    code, tags = d.msgbox("Reload executed with status:\n%s" % output)
     reloadmenu()
 
 def completereloadaction():
@@ -746,7 +812,7 @@ def completereloadaction():
         cmd="firewall-cmd --reload"
         p = Popen(cmd, stdout=PIPE, shell=True)
         output, error = p.communicate()
-        code, tags = d.msgbox("Complete Reload executed with status: \n %s" % output)
+        code, tags = d.msgbox("Complete Reload executed with status:\n%s" % output)
         reloadmenu()
     else:
         reloadmenu()
@@ -757,7 +823,7 @@ def runtoperm():
         cmd="firewall-cmd --runtime-to-permanent"
         p = Popen(cmd, stdout=PIPE, shell=True)
         output, error = p.communicate()
-        code, tags = d.msgbox("Complete Reload executed with status: \n %s" % output)
+        code, tags = d.msgbox("Complete Reload executed with status:\n%s" % output)
         reloadmenu()
     else:
         reloadmenu()
